@@ -2,30 +2,36 @@ name: Flight Tracker Automation
 
 on:
   schedule:
-    - cron: "0 * * * *"  # Runs every hour (change as needed)
-  workflow_dispatch:  # Allows manual trigger
+    - cron: "0 * * * *"  # Runs every hour
+  workflow_dispatch:  # Allows manual execution
 
 jobs:
-  run_script:
+  track_flight:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.9"
-
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install -y chromium-chromedriver
-          pip install selenium requests beautifulsoup4
+          sudo apt install -y unzip wget
 
-      - name: Run flight tracker script
-        env:
-          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+      - name: Install Latest Chrome & ChromeDriver
+        run: |
+          LATEST_CHROME=$(curl -sSL https://dl.google.com/linux/chrome/deb/dists/stable/main/binary-amd64/Packages | grep "Version:" | awk '{print $2}' | sort -rV | head -n1)
+          wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
+          
+          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d'.' -f1)
+          wget -q "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}.0.0/linux64/chromedriver-linux64.zip"
+          unzip chromedriver-linux64.zip
+          sudo mv chromedriver-linux64/chromedriver /usr/bin/chromedriver
+          sudo chmod +x /usr/bin/chromedriver
+
+      - name: Install Python Dependencies
+        run: pip install selenium
+
+      - name: Run Flight Tracker
         run: python flight_tracker.py
