@@ -1,0 +1,31 @@
+name: Flight Tracker Automation
+
+on:
+  schedule:
+    - cron: "0 * * * *"  # Runs every hour (change as needed)
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  run_script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y chromium-chromedriver
+          pip install selenium requests beautifulsoup4
+
+      - name: Run flight tracker script
+        env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+        run: main.py
